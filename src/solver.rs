@@ -1,3 +1,6 @@
+// TODO Big-M
+// TODO Revised simplex method?
+// TODO faster HashMap Hashing?
 use std::collections::HashMap;
 
 #[allow(dead_code)]
