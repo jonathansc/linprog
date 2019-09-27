@@ -79,7 +79,7 @@ fn next(tableau: &mut Vec<Vec<f64>>, (pivot_row, pivot_column): (usize, usize)) 
 }
 
 #[allow(dead_code)]
-fn solve(tableau: &mut Vec<Vec<f64>>) -> (Option<HashMap<usize, f64>>, f64) {
+pub fn solve(tableau: &mut Vec<Vec<f64>>) -> (Option<HashMap<usize, f64>>, f64) {
     let mut pivot_element: (usize, usize);
     while !is_optimal(tableau) {
         match pivot(tableau) {
