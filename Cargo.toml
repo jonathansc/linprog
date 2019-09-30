@@ -3,6 +3,7 @@ name = "linprog"
 version = "0.1.0"
 authors = ["jonathansc <55756347+jonathansc@users.noreply.github.com>"]
 edition = "2018"
-
+license = "MIT"
+description = "A library for optimizing linear programing models."
 [dependencies]
 uuid = { version = "0.4", features = ["v4"] }

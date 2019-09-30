@@ -62,6 +62,8 @@ fn pivot(tableau: &Vec<Vec<f64>>) -> Option<(usize, usize)> {
 }
 
 #[allow(dead_code)]
+// TODO Maybe avoid closures because of overhead of env. catching?
+// esp. second
 fn next(tableau: &mut Vec<Vec<f64>>, (pivot_row, pivot_column): (usize, usize)) {
     let pivot = tableau[pivot_row][pivot_column];
     tableau[pivot_row] = tableau[pivot_row].iter().map(|&x| x / pivot).collect();
