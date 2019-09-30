@@ -1,8 +1,16 @@
+//! A library for optimizing linear programing (LP) models.
+//! 
+//! Provides simple utilities to create and optimize dynamic LP models.
+//! 
+//! Currently does not support the two phase method.
 // TODO custom error types instead of Result<_,&'static str>
+// TODO add print method / trait on model and variable
+// TODO add names for variables (see README-printing issue)
 mod solver;
 
 use uuid::Uuid;
 
+/// Representation of a linear programing model.
 pub struct Model {
     name: String,
     state: State,
@@ -20,8 +28,11 @@ enum State {
     PostRegistration,
 }
 
+/// A linear programs objective.
 pub enum Objective {
+    /// Maximize
     Max,
+    /// Minimize
     Min,
 }
 
@@ -32,19 +43,26 @@ struct Variable {
     objective_value: f64,
 }
 
+/// A representation of a variable used in the linear program.
 pub struct Var {
     reference: Uuid,
 }
 
+/// A pair of factor and variable for constructing sums.
 pub struct Summand<'a>(pub f64, pub &'a Var);
 
+/// A constraints comparing operator.
 pub enum Operator {
-    Ge, // >=
-    E,  // ==
-    Le, // <=
+    /// Greater or equal: `>=`
+    Ge,
+    /// Equal: `==`
+    E,
+    /// Less or equal: `<=`
+    Le,
 }
 
 impl Model {
+    /// Creates a new `Model`.
     pub fn new(name: &str, objective: Objective) -> Self {
         Model {
             name: String::from(name),
@@ -57,6 +75,16 @@ impl Model {
         }
     }
 
+    /// Submits the registered variables or constraints to the `Model` and changes its phase to the next.
+    /// This method can be called implicitly by calling `reg_constr` or `solve`.
+    /// 
+    /// The `Model`s lifetime follows three strictly seperated phases:
+    /// 
+    ///  - In the first phase, variables are registered.
+    ///  - In the second phase, constraints are registered.
+    ///  - In the third phase, the `Model` can be solved / optimized.
+    /// 
+    /// After the variables or constraints are submitted to the `Model` they can not be changed again (The phases can not be reverted or modified).
     pub fn update(&mut self) -> &mut Self {
         match self.state {
             State::VariableRegistration => self.state = State::ConstraintRegistration,
@@ -66,6 +94,9 @@ impl Model {
         self
     }
 
+    /// Registers a variable for the `Model`.
+    /// # Panics
+    /// This method panics if the variables were already submitted. See [`update`](#method.update).
     pub fn reg_var(&mut self, objective_value: f64) -> Var {
         if let State::VariableRegistration = self.state {
             self.variables.push(Variable {
@@ -81,6 +112,9 @@ impl Model {
         }
     }
 
+    /// Returns the optimal value for a given variable.
+    /// # Errors
+    /// This method will return an Error if the optimal value has not been calculated yet.
     pub fn x(&self, req: &Var) -> Result<f64, &'static str> {
         for variable in &self.variables {
             if variable.uuid == req.reference {
@@ -94,6 +128,11 @@ impl Model {
         panic!("Variable not registered for this model");
     }
 
+    /// Registers a constraint.
+    /// # Panics
+    /// This method panics if the constraints were already submitted. See [`update`](#method.update).
+    /// 
+    /// Or if one of the variables in sum does not belong to the calling `Model`.
     pub fn reg_constr(&mut self, mut sum: Vec<Summand>, op: Operator, b: f64) -> &mut Self {
         match self.state {
             State::VariableRegistration => {
@@ -196,6 +235,7 @@ impl Model {
         self
     }
 
+    /// Solves / optimizes the `Model`.
     pub fn solve(&mut self) -> &mut Self {
         if let Option::None = self.optimum {
             match self.state {
@@ -226,6 +266,9 @@ impl Model {
         self
     }
 
+    /// Returns the optimal value if it was calculated already.
+    /// # Errors
+    /// This method will return an Error if the optimum has not been calculated yet.
     pub fn optimum(&self) -> Result<f64, &'static str> {
         self.optimum.ok_or_else(|| "Model not solved yet")
     }
@@ -425,5 +468,49 @@ mod tests {
         assert!(model.x(&vars[0]).is_err());
         assert!(model.x(&vars[1]).is_err());
         assert_eq!(1.0 / 0.0, model.optimum().unwrap());
+    }
+
+    #[test]
+    fn test_readme_example() {
+        let price: [f64;3] = [50.0, 100.0, 110.0];
+        let max_workload: [f64;3] = [2500.0, 2000.0, 450.0];
+        let prod_machiene_time: [[f64;3];3] = [
+            [10.0, 4.0, 1.0],
+            [5.0, 10.0, 1.5],
+            [6.0, 9.0, 3.0],
+        ];
+
+        let mut model = Model::new("ABC_Company", Objective::Max);
+        let mut vars: Vec<Var> = Vec::new();
+        // Register variables corresponding to the number of units produced for each product
+        for p in 0..3 {
+            vars.push(model.reg_var(price[p]));
+        }
+        // Register our constraints:
+        // For every machiene m: sum the workload for each product p at this machiene 
+        // and make sure it stays below our maximum workload for this machiene
+        for m in 0..3 {
+            let mut sum: Vec<Summand> = Vec::new();
+            for p in 0..3 {
+                sum.push(Summand (
+                    prod_machiene_time[p][m],
+                    &vars[p],
+                ));
+            }
+            model.reg_constr(sum, Operator::Le, max_workload[m]);
+        }
+        // Solve the model
+        model.solve();
+        // Print the output
+        /*print!("The optimum is at {}$.\n", model.optimum().unwrap());
+        for p in 0..3 {
+            // TODO names for variables
+            print!("We need to produce {} units of product {}.\n", model.x(&vars[p]).unwrap(), p);
+        }*/
+        // Test
+        assert_eq!(178.57142857142856, model.x(&vars[0]).unwrap());
+        assert_eq!(85.71428571428572, model.x(&vars[1]).unwrap());
+        assert_eq!(47.61904761904763, model.x(&vars[2]).unwrap());
+        assert_eq!(22738.095238095237, model.optimum().unwrap());
     }
 }
