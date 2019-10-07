@@ -1,4 +1,4 @@
-//! A library for optimizing linear programing (LP) models.
+//! A library for optimizing linear programming (LP) models.
 //! 
 //! Provides simple utilities to create and optimize dynamic LP models.
 //! 
@@ -10,7 +10,7 @@ mod solver;
 
 use uuid::Uuid;
 
-/// Representation of a linear programing model.
+/// Representation of a linear programming model.
 pub struct Model {
     name: String,
     state: State,
@@ -250,7 +250,7 @@ impl Model {
                 }
                 State::PostRegistration => {
                     self.init_tableau();
-                    let (solution, value) = solver::solve(&mut self.tableau);
+                    let (solution, value) = solver::solve(&mut self.tableau, Option::None);
                     match self.objective {
                         Objective::Max => self.optimum = Option::Some(value),
                         Objective::Min => self.optimum = Option::Some(-value),
