@@ -104,8 +104,9 @@ pub fn solve(tableau: &mut Vec<Vec<f64>>, variable_count: Option<usize>) -> (Opt
     (Option::Some(map), value)
 }
 
+// TODO make nice
 #[allow(dead_code)]
-pub fn solve_two_phases(tableau: &mut Vec<Vec<f64>>, position_b: usize) -> (Option<HashMap<usize, f64>>, f64) {
+fn solve_two_phases(tableau: &mut Vec<Vec<f64>>, position_b: usize) -> (Option<HashMap<usize, f64>>, f64) {
     // Count #AV needed
     let mut number_artificial_variables = 0;
     for row in tableau[1..].iter() {
@@ -152,12 +153,63 @@ pub fn solve_two_phases(tableau: &mut Vec<Vec<f64>>, position_b: usize) -> (Opti
     let mut phase_two_objective_fn: Vec<f64> = tableau[0].to_vec();
     tableau[0] = phase_one_objective_fn;
     // Solve phase one
-    let (solution, value) = solve(tableau, Option::Some(position_b));
+    let (_, value) = solve(tableau, Option::Some(position_b));
     // Check for possible solution
     if value != 0f64 {
         panic!("Model is infeasable");
     }
+    // Calculate phase two objective function
+    let last_index = phase_two_objective_fn.len() - 1;
+    for variable in 0..phase_two_objective_fn.len() {
+        if phase_two_objective_fn[variable] != 0f64 && is_base_variable(tableau, variable) {
+            // Variable should be displayed by non base variables
+            for row in tableau[1..].iter() {
+                if row[variable] == 1f64 {
+                    for column_index in 0..phase_two_objective_fn.len() - 1 {
+                        if column_index != variable {
+                            phase_two_objective_fn[column_index] += phase_two_objective_fn[variable] * (-row[column_index]);
+                        }
+                    }
+                    phase_two_objective_fn[last_index] += phase_two_objective_fn[variable] * row[row.len() - 1];
+                }
+            }
+            phase_two_objective_fn[variable] = 0f64;
+        }
+    }
+    phase_two_objective_fn[last_index] *= -1f64;
+    tableau[0] = phase_two_objective_fn;
+    // Remove AVs
+    for row in tableau[1..].iter_mut() {
+        let b = row.pop().unwrap();
+        for _ in 0..number_artificial_variables {
+            row.pop();
+        }
+        row.push(b);
+    }
+    // Do simplex
+    let (solution, value) = solve(tableau, Option::None);
     (solution, value)
+}
+
+#[allow(dead_code)]
+fn is_base_variable(tableau: &Vec<Vec<f64>>, variable: usize) -> bool {
+    let mut found_one = false;
+    let mut ret = false;
+    for row in tableau[1..].iter() {
+        if row[variable] == 1f64 {
+            if found_one == true {
+                ret = false;
+                break;
+            } else {
+                found_one = true;
+                ret = true;
+            }
+        } else if row[variable] != 0f64 {
+            ret = false;
+            break;
+        }
+    }
+    ret
 }
 
 #[cfg(test)]
@@ -218,11 +270,8 @@ mod tests {
         let mut tableaus = tableaus();
         let mut solution = HashMap::new();
         solution.insert(0, 10.0);
-        solution.insert(1, 0.0);
-        solution.insert(2, 10.0);
-        solution.insert(3, 20.0);
-        solution.insert(4, 0.0);
-        solution.insert(5, 0.0);
-        assert_eq!((Option::Some(solution), 0.0), solve(&mut tableaus[3], Option::None));
+        solution.insert(1, 10.0);
+        solution.insert(2, 20.0);
+        assert_eq!((Option::Some(solution), 70.0), solve(&mut tableaus[3], Option::None));
     }
 }
