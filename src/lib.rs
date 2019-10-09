@@ -1,13 +1,16 @@
 //! A library for optimizing linear programming (LP) models.
 //!
 //! Provides simple utilities to create and optimize dynamic LP models.
-//!
-//! Currently does not support the two phase method.
 // TODO custom error types instead of Result<_,&'static str>
-// TODO add print method / trait on model and variable
-// TODO add names for variables (see README-printing issue)
+// TODO impl Display for Var
+// Problem: variable fields not copyable / "borrow occures twice"
+
+#[cfg(test)]
+mod tests;
+
 mod solver;
 
+use std::fmt;
 use uuid::Uuid;
 
 /// Representation of a linear programming model.
@@ -38,6 +41,7 @@ pub enum Objective {
 
 #[derive(PartialEq)]
 struct Variable {
+    name: Option<String>,
     uuid: Uuid,
     x: Option<f64>,
     objective_value: f64,
@@ -97,9 +101,22 @@ impl Model {
     /// Registers a variable for the `Model`.
     /// # Panics
     /// This method panics if the variables were already submitted. See [`update`](#method.update).
+    // TODO simple overloading not possible?
     pub fn reg_var(&mut self, objective_value: f64) -> Var {
+        self.reg_var_overload(objective_value, Option::None)
+    }
+
+    /// Registers a variable, with a given name, for the `Model`.
+    /// # Panics
+    /// This method panics if the variables were already submitted. See [`update`](#method.update).
+    pub fn reg_var_with_name(&mut self, objective_value: f64, name: &str) -> Var {
+        self.reg_var_overload(objective_value, Option::Some(String::from(name)))
+    }
+
+    fn reg_var_overload(&mut self, objective_value: f64, name: Option<String>) -> Var {
         if let State::VariableRegistration = self.state {
             self.variables.push(Variable {
+                name,
                 uuid: Uuid::new_v4(),
                 x: Option::None,
                 objective_value,
@@ -272,5 +289,28 @@ impl Model {
     }
 }
 
-#[cfg(test)]
-mod tests;
+// I know this part does not look good
+// TODO simpe solution
+impl fmt::Display for Model {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.optimum {
+            Option::Some(optimum) => {
+                let mut i = 0;
+                writeln!(
+                    f,
+                    "\nModel \"{}\" [solved]:\n\tOptimum: {}{}",
+                    self.name,
+                    optimum,
+                    self.variables.iter().fold(String::new(), |acc, variable| {
+                        i += 1;
+                        acc + "\n\tVariable \""
+                            + &variable.name.as_ref().unwrap_or(&i.to_string())
+                            + "\": "
+                            + &variable.x.unwrap().to_string()
+                    })
+                )
+            }
+            Option::None => writeln!(f, "\nModel \"{}\" [not solved]", self.name),
+        }
+    }
+}

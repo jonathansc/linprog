@@ -1,4 +1,8 @@
 // TODO Revised simplex method?
+
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashMap;
 
 #[allow(dead_code)]
@@ -115,20 +119,29 @@ fn solve_two_phases(
         }
     }
     // Phase one
-    let phase_two_objective_function = prepare_phase_one(tableau, number_artificial_variables, position_b);
+    let phase_two_objective_function =
+        prepare_phase_one(tableau, number_artificial_variables, position_b);
     let (_, value) = solve(tableau, Option::Some(position_b));
     // Check if model is feasable
     if value != 0f64 {
         panic!("Model is infeasable");
     }
     // Phase two
-    prepare_phase_two(tableau, phase_two_objective_function, number_artificial_variables);
+    prepare_phase_two(
+        tableau,
+        phase_two_objective_function,
+        number_artificial_variables,
+    );
     let (solution, value) = solve(tableau, Option::None);
     (solution, value)
 }
 
 #[allow(dead_code)]
-fn prepare_phase_one(tableau: &mut Vec<Vec<f64>>, number_artificial_variables: usize, position_b: usize) -> Vec<f64> {
+fn prepare_phase_one(
+    tableau: &mut Vec<Vec<f64>>,
+    number_artificial_variables: usize,
+    position_b: usize,
+) -> Vec<f64> {
     let mut phase_one_objective_function: Vec<f64> = vec![0f64; position_b + 1];
     // Add AV to constraints
     for (row_index, row) in tableau[1..].iter_mut().enumerate() {
@@ -167,7 +180,11 @@ fn prepare_phase_one(tableau: &mut Vec<Vec<f64>>, number_artificial_variables: u
 }
 
 #[allow(dead_code)]
-fn prepare_phase_two(tableau: &mut Vec<Vec<f64>>, mut phase_two_objective_function: Vec<f64>, number_artificial_variables: usize) {
+fn prepare_phase_two(
+    tableau: &mut Vec<Vec<f64>>,
+    mut phase_two_objective_function: Vec<f64>,
+    number_artificial_variables: usize,
+) {
     // Calculate phase two objective function
     let last_index = phase_two_objective_function.len() - 1;
     for variable in 0..phase_two_objective_function.len() {
@@ -200,7 +217,6 @@ fn prepare_phase_two(tableau: &mut Vec<Vec<f64>>, mut phase_two_objective_functi
     }
 }
 
-
 #[allow(dead_code)]
 fn is_base_variable(tableau: &Vec<Vec<f64>>, variable: usize) -> bool {
     let mut found_one = false;
@@ -220,80 +236,4 @@ fn is_base_variable(tableau: &Vec<Vec<f64>>, variable: usize) -> bool {
         }
     }
     ret
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::HashMap;
-
-    fn tableaus() -> [Vec<Vec<f64>>; 4] {
-        [
-            // x* = (x1,x2) = (3.6, 0.4)
-            // opt: 7.6
-            vec![
-                vec![2.0, 1.0, 0.0, 0.0, 0.0],
-                vec![2.0, -3.0, 1.0, 0.0, 6.0],
-                vec![1.0, 1.0, 0.0, 1.0, 4.0],
-            ],
-            // x* = (x1,x2) = (20, 17)
-            // opt: 94
-            vec![
-                vec![3.0, 2.0, 0.0, 0.0, 0.0],
-                vec![-1.0, 2.0, 1.0, 0.0, 14.0],
-                vec![1.0, -1.0, 0.0, 1.0, 3.0],
-            ],
-            // x* = (x1,x2) = None
-            // opt: 1.0/0.0
-            vec![
-                vec![1.0, 2.0, 0.0, 0.0, 0.0, 0.0],
-                vec![-2.0, -1.0, 1.0, 0.0, 0.0, 2.0],
-                vec![3.0, -4.0, 0.0, 1.0, 0.0, 12.0],
-                vec![1.0, 0.0, 0.0, 0.0, 1.0, 2.0],
-            ],
-            // Two phase method needed
-            vec![
-                vec![2.0, 3.0, 1.0, 0.0, 0.0, 0.0, 0.0],
-                vec![1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 40.0],
-                vec![-2.0, -1.0, 1.0, 0.0, 1.0, 0.0, -10.0],
-                vec![0.0, 1.0, -1.0, 0.0, 0.0, 1.0, -10.0],
-            ],
-        ]
-    }
-
-    #[test]
-    fn test_solve() {
-        let mut tableaus = tableaus();
-        let mut solution = HashMap::new();
-        solution.insert(0, 3.6);
-        solution.insert(1, 0.4);
-        assert_eq!(
-            (Option::Some(solution), 7.6),
-            solve(&mut tableaus[0], Option::None)
-        );
-        let mut solution = HashMap::new();
-        solution.insert(0, 20.0);
-        solution.insert(1, 17.0);
-        assert_eq!(
-            (Option::Some(solution), 94.0),
-            solve(&mut tableaus[1], Option::None)
-        );
-        assert_eq!(
-            (Option::None, 1.0 / 0.0),
-            solve(&mut tableaus[2], Option::None)
-        );
-    }
-
-    #[test]
-    fn test_solve_two_phases() {
-        let mut tableaus = tableaus();
-        let mut solution = HashMap::new();
-        solution.insert(0, 10.0);
-        solution.insert(1, 10.0);
-        solution.insert(2, 20.0);
-        assert_eq!(
-            (Option::Some(solution), 70.0),
-            solve(&mut tableaus[3], Option::None)
-        );
-    }
 }
