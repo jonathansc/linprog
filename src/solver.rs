@@ -1,6 +1,4 @@
-// TODO Big-M
 // TODO Revised simplex method?
-// TODO faster HashMap Hashing?
 use std::collections::HashMap;
 
 #[allow(dead_code)]
@@ -37,7 +35,6 @@ fn optimum(tableau: &Vec<Vec<f64>>, variable_count: usize) -> (HashMap<usize, f6
 #[allow(dead_code)]
 // TODO Other pricing methods?
 fn pivot(tableau: &Vec<Vec<f64>>) -> Option<(usize, usize)> {
-    // TODO benchmark over iter() version
     let mut max_column: (usize, f64) = (0, -1.0 / 0.0);
     for (column_index, &value) in tableau[0][..tableau[0].len() - 1].iter().enumerate() {
         if value > max_column.1 {
@@ -62,8 +59,6 @@ fn pivot(tableau: &Vec<Vec<f64>>) -> Option<(usize, usize)> {
 }
 
 #[allow(dead_code)]
-// TODO Maybe avoid closures because of overhead of env. catching?
-// esp. second
 fn next(tableau: &mut Vec<Vec<f64>>, (pivot_row, pivot_column): (usize, usize)) {
     let pivot = tableau[pivot_row][pivot_column];
     tableau[pivot_row] = tableau[pivot_row].iter().map(|&x| x / pivot).collect();
@@ -81,7 +76,10 @@ fn next(tableau: &mut Vec<Vec<f64>>, (pivot_row, pivot_column): (usize, usize)) 
 }
 
 #[allow(dead_code)]
-pub fn solve(tableau: &mut Vec<Vec<f64>>, variable_count: Option<usize>) -> (Option<HashMap<usize, f64>>, f64) {
+pub fn solve(
+    tableau: &mut Vec<Vec<f64>>,
+    variable_count: Option<usize>,
+) -> (Option<HashMap<usize, f64>>, f64) {
     let position_b = tableau[0].len() - 1;
     for row in tableau[1..].iter() {
         if row[position_b] < 0f64 {
@@ -104,9 +102,11 @@ pub fn solve(tableau: &mut Vec<Vec<f64>>, variable_count: Option<usize>) -> (Opt
     (Option::Some(map), value)
 }
 
-// TODO make nice
 #[allow(dead_code)]
-fn solve_two_phases(tableau: &mut Vec<Vec<f64>>, position_b: usize) -> (Option<HashMap<usize, f64>>, f64) {
+fn solve_two_phases(
+    tableau: &mut Vec<Vec<f64>>,
+    position_b: usize,
+) -> (Option<HashMap<usize, f64>>, f64) {
     // Count #AV needed
     let mut number_artificial_variables = 0;
     for row in tableau[1..].iter() {
@@ -114,18 +114,30 @@ fn solve_two_phases(tableau: &mut Vec<Vec<f64>>, position_b: usize) -> (Option<H
             number_artificial_variables += 1;
         }
     }
-    // New (phase one) objective function
-    // TODO maybe with_capacity
-    let mut phase_one_objective_fn: Vec<f64> = vec![0f64; position_b + 1];
+    // Phase one
+    let phase_two_objective_function = prepare_phase_one(tableau, number_artificial_variables, position_b);
+    let (_, value) = solve(tableau, Option::Some(position_b));
+    // Check if model is feasable
+    if value != 0f64 {
+        panic!("Model is infeasable");
+    }
+    // Phase two
+    prepare_phase_two(tableau, phase_two_objective_function, number_artificial_variables);
+    let (solution, value) = solve(tableau, Option::None);
+    (solution, value)
+}
+
+#[allow(dead_code)]
+fn prepare_phase_one(tableau: &mut Vec<Vec<f64>>, number_artificial_variables: usize, position_b: usize) -> Vec<f64> {
+    let mut phase_one_objective_function: Vec<f64> = vec![0f64; position_b + 1];
     // Add AV to constraints
     for (row_index, row) in tableau[1..].iter_mut().enumerate() {
         if row[position_b] < 0f64 {
             // Change +/- and build phase one objective function
             for (variable, value) in row.iter_mut().enumerate() {
                 *value *= -1f64;
-                phase_one_objective_fn[variable] += *value;
+                phase_one_objective_function[variable] += *value;
             }
-            //*row = row.iter().map(|x| -x).collect();
             let b = row.pop().unwrap();
             for i in 0..number_artificial_variables {
                 if i == row_index {
@@ -144,40 +156,40 @@ fn solve_two_phases(tableau: &mut Vec<Vec<f64>>, position_b: usize) -> (Option<H
         }
     }
     // Add zeros for AV in phase one objective function
-    let z = phase_one_objective_fn.pop().unwrap();
+    let z = phase_one_objective_function.pop().unwrap();
     for _ in 0..number_artificial_variables {
-        phase_one_objective_fn.push(0f64);
+        phase_one_objective_function.push(0f64);
     }
-    phase_one_objective_fn.push(z);
-    // Change objective functions
-    let mut phase_two_objective_fn: Vec<f64> = tableau[0].to_vec();
-    tableau[0] = phase_one_objective_fn;
-    // Solve phase one
-    let (_, value) = solve(tableau, Option::Some(position_b));
-    // Check for possible solution
-    if value != 0f64 {
-        panic!("Model is infeasable");
-    }
+    phase_one_objective_function.push(z);
+    let phase_two_objective_function: Vec<f64> = tableau[0].to_vec();
+    tableau[0] = phase_one_objective_function;
+    phase_two_objective_function
+}
+
+#[allow(dead_code)]
+fn prepare_phase_two(tableau: &mut Vec<Vec<f64>>, mut phase_two_objective_function: Vec<f64>, number_artificial_variables: usize) {
     // Calculate phase two objective function
-    let last_index = phase_two_objective_fn.len() - 1;
-    for variable in 0..phase_two_objective_fn.len() {
-        if phase_two_objective_fn[variable] != 0f64 && is_base_variable(tableau, variable) {
+    let last_index = phase_two_objective_function.len() - 1;
+    for variable in 0..phase_two_objective_function.len() {
+        if phase_two_objective_function[variable] != 0f64 && is_base_variable(tableau, variable) {
             // Variable should be displayed by non base variables
             for row in tableau[1..].iter() {
                 if row[variable] == 1f64 {
-                    for column_index in 0..phase_two_objective_fn.len() - 1 {
+                    for column_index in 0..phase_two_objective_function.len() - 1 {
                         if column_index != variable {
-                            phase_two_objective_fn[column_index] += phase_two_objective_fn[variable] * (-row[column_index]);
+                            phase_two_objective_function[column_index] +=
+                                phase_two_objective_function[variable] * (-row[column_index]);
                         }
                     }
-                    phase_two_objective_fn[last_index] += phase_two_objective_fn[variable] * row[row.len() - 1];
+                    phase_two_objective_function[last_index] +=
+                        phase_two_objective_function[variable] * row[row.len() - 1];
                 }
             }
-            phase_two_objective_fn[variable] = 0f64;
+            phase_two_objective_function[variable] = 0f64;
         }
     }
-    phase_two_objective_fn[last_index] *= -1f64;
-    tableau[0] = phase_two_objective_fn;
+    phase_two_objective_function[last_index] *= -1f64;
+    tableau[0] = phase_two_objective_function;
     // Remove AVs
     for row in tableau[1..].iter_mut() {
         let b = row.pop().unwrap();
@@ -186,10 +198,8 @@ fn solve_two_phases(tableau: &mut Vec<Vec<f64>>, position_b: usize) -> (Option<H
         }
         row.push(b);
     }
-    // Do simplex
-    let (solution, value) = solve(tableau, Option::None);
-    (solution, value)
 }
+
 
 #[allow(dead_code)]
 fn is_base_variable(tableau: &Vec<Vec<f64>>, variable: usize) -> bool {
@@ -257,12 +267,21 @@ mod tests {
         let mut solution = HashMap::new();
         solution.insert(0, 3.6);
         solution.insert(1, 0.4);
-        assert_eq!((Option::Some(solution), 7.6), solve(&mut tableaus[0], Option::None));
+        assert_eq!(
+            (Option::Some(solution), 7.6),
+            solve(&mut tableaus[0], Option::None)
+        );
         let mut solution = HashMap::new();
         solution.insert(0, 20.0);
         solution.insert(1, 17.0);
-        assert_eq!((Option::Some(solution), 94.0), solve(&mut tableaus[1], Option::None));
-        assert_eq!((Option::None, 1.0 / 0.0), solve(&mut tableaus[2], Option::None));
+        assert_eq!(
+            (Option::Some(solution), 94.0),
+            solve(&mut tableaus[1], Option::None)
+        );
+        assert_eq!(
+            (Option::None, 1.0 / 0.0),
+            solve(&mut tableaus[2], Option::None)
+        );
     }
 
     #[test]
@@ -272,6 +291,9 @@ mod tests {
         solution.insert(0, 10.0);
         solution.insert(1, 10.0);
         solution.insert(2, 20.0);
-        assert_eq!((Option::Some(solution), 70.0), solve(&mut tableaus[3], Option::None));
+        assert_eq!(
+            (Option::Some(solution), 70.0),
+            solve(&mut tableaus[3], Option::None)
+        );
     }
 }
