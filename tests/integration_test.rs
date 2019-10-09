@@ -142,13 +142,19 @@ fn readme_example() {
         ("Product A", 50.0),
         ("Product B", 100.0),
         ("Product C", 110.0),
-    ].iter().cloned().collect();
+    ]
+    .iter()
+    .cloned()
+    .collect();
 
     let machines: HashMap<&str, f64> = [
         ("Machine X", 2500.0),
         ("Machine Y", 2000.0),
         ("Machine Z", 450.0),
-    ].iter().cloned().collect();
+    ]
+    .iter()
+    .cloned()
+    .collect();
 
     let mut time_needed: HashMap<(&str, &str), f64> = HashMap::new();
     time_needed.insert(("Product A", "Machine X"), 10.0);

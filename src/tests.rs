@@ -1,4 +1,3 @@
-
 // TODO tests on init_tableau
 use crate::*;
 
