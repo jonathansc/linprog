@@ -7,6 +7,15 @@ This library does not (yet :turtle:) support mixed integer programming.
 
 Linprog will be available on [crates.io](https://crates.io) soon.
 
+## Table of contents
+- [linprog](#linprog)
+  - [Table of contents](#table-of-contents)
+  - [Usage](#usage)
+  - [Example](#example)
+  - [Example with story](#example-with-story)
+  - [How you can help](#how-you-can-help)
+  - [License](#license)
+
 ## Usage
 Add this to your `Cargo.toml`:
 ```toml
@@ -18,7 +27,49 @@ Then include it in your code like this:
 use linprog;
 ```
 
-## Example (with story)
+## Example
+The code below can be used to solve the following model:
+```
+max. 3x + 5y
+st.   x + 2y <= 170
+          3y <= 180
+```
+Rust implementation:
+```rust
+let mut model = Model::new("Readme example", Objective::Max);
+let mut vars: Vec<Var> = vec![];
+
+vars.push(model.reg_var(3.0));
+vars.push(model.reg_var(5.0));
+
+model.reg_constr(
+    vec![Summand(1.0, &vars[0]), Summand(2.0, &vars[1])],
+    Operator::Le,
+    170.0,
+);
+model.reg_constr(
+    vec![Summand(1.0, &vars[0]), Summand(1.0, &vars[1])],
+    Operator::Le,
+    150.0,
+);
+model.reg_constr(
+    vec![Summand(0.0, &vars[0]), Summand(3.0, &vars[1])],
+    Operator::Le,
+    180.0,
+);
+
+model.solve();
+print!("{}", model);
+```
+This program will print out the following:
+```
+Model "Readme example" [solved]:
+    Optimum: 490
+    Variable "1": 130
+    Variable "2": 20
+```
+
+## Example with story
 Lets say a company produces three products: 
  - Product `A` selling at `50$`
  - Product `B` selling at `100$`
@@ -74,7 +125,7 @@ time_needed.insert(("Product C", "Machine X"), 6.0);
 time_needed.insert(("Product C", "Machine Y"), 9.0);
 time_needed.insert(("Product C", "Machine Z"), 3.0);
 ```
-A less verbose way to define the data could look like this:
+A less verbose way to define the data might look like this:
 ```rust
 let product_price: [f64;3] = [50.0, 100.0, 110.0];
 let machine_max_workload: [f64;3] = [2500.0, 2000.0, 450.0];
@@ -135,3 +186,9 @@ We need to produce 178 units of product Product A.
 We need to produce 47 units of product Product C.
 ```
 Make of this what you want :ok_woman:
+
+## How you can help
+* Please have a look at the [help wanted issues](https://github.com/jonathansc/linprog/labels/help%20wanted) -- these include both development and data supply issues
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details

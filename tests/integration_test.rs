@@ -138,6 +138,37 @@ fn solve_5() {
 
 #[test]
 fn readme_example() {
+    let mut model = Model::new("Readme example", Objective::Max);
+    let mut vars: Vec<Var> = vec![];
+    // x* = (x1,x2) = (130, 20)
+    // opt: 490
+    vars.push(model.reg_var(3.0));
+    vars.push(model.reg_var(5.0));
+    model.reg_constr(
+        vec![Summand(1.0, &vars[0]), Summand(2.0, &vars[1])],
+        Operator::Le,
+        170.0,
+    );
+    model.reg_constr(
+        vec![Summand(1.0, &vars[0]), Summand(1.0, &vars[1])],
+        Operator::Le,
+        150.0,
+    );
+    model.reg_constr(
+        vec![Summand(0.0, &vars[0]), Summand(3.0, &vars[1])],
+        Operator::Le,
+        180.0,
+    );
+    model.solve();
+    //print!("{}", model);
+    // Test
+    assert_eq!(130.0, model.x(&vars[0]).unwrap());
+    assert_eq!(20.0, model.x(&vars[1]).unwrap());
+    assert_eq!(490.0, model.optimum().unwrap());
+}
+
+#[test]
+fn readme_example_story() {
     let products: HashMap<&str, f64> = [
         ("Product A", 50.0),
         ("Product B", 100.0),
