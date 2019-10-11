@@ -5,5 +5,7 @@ authors = ["jonathansc <jonathansc@airmail.cc>"]
 edition = "2018"
 license = "MIT"
 description = "A linear programming library."
+repository = "https://github.com/jonathansc/linprog"
+readme= "README.md"
 [dependencies]
 uuid = { version = "0.4", features = ["v4"] }
