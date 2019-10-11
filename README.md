@@ -5,7 +5,7 @@ Linprog provides utilities to create and optimize dynamic LP models.
 
 This library does not (yet :turtle:) support mixed integer programming.
 
-Linprog will be available on [crates.io](https://crates.io) soon.
+Linprog is available on [crates.io](https://crates.io/crates/linprog)!
 
 ## Table of contents
 - [linprog](#linprog)
@@ -24,9 +24,15 @@ Add this to your `Cargo.toml`:
 [dependencies]
 linprog = "0.3"
 ```
-Then include it in your code like this:
+Then bring the library into scope:
 ```rust
-use linprog;
+use linprog::{
+    Model,
+    Objective,
+    Summand,
+    Operator,
+    Var
+};
 ```
 ### Understanding a LP's lifetime in linprog
 In this library a linear program is represented by a datatype called `Model`, created like this:
