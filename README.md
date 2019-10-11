@@ -11,6 +11,7 @@ Linprog will be available on [crates.io](https://crates.io) soon.
 - [linprog](#linprog)
   - [Table of contents](#table-of-contents)
   - [Usage](#usage)
+    - [Understanding a LP's lifetime in linprog](#understanding-a-lps-lifetime-in-linprog)
   - [Example](#example)
   - [Example with story](#example-with-story)
   - [How you can help](#how-you-can-help)
@@ -26,9 +27,36 @@ Then include it in your code like this:
 ```rust
 use linprog;
 ```
+### Understanding a LP's lifetime in linprog
+In this library a linear program is represented by a datatype called `Model`, created like this:
+```rust
+let mut model = Model::new("My LP", Objective::Max);
+```
+The `Model`'s lifetime follows three strictly seperated phases:
+- In the first (and initially set) phase, variables can be registered. 
+```rust
+let mut vars: Vec<Var> = vec![];
+vars.push(model.reg_var(2.0));
+// --snip--
+```
+- In the second phase, constraints can be registered.
+```rust
+// model.update();
+model.reg_constr(vec![Summand(1.0, &vars[0])], Operator::Le, 10.0);
+// --snip--
+```
+- In the third phase, the `Model` can be optimized.
+```rust
+// model.update();
+model.optimize();
+```
+The `Models`'s phase can be explicitly updated to the next phase using the `update` method. Or implicitly, by calling the method for the next phase.
+
+After the variables or constraints are submitted to the `Model`, they can not be changed again (The phases can not be reverted or modified).
+
 
 ## Example
-The code below can be used to solve the following model:
+The code below can be used to optimize the following model:
 ```
 max. 3x + 5y
 st.   x + 2y <= 170
@@ -58,12 +86,12 @@ model.reg_constr(
     180.0,
 );
 
-model.solve();
+model.optimize();
 print!("{}", model);
 ```
 This program will print out the following:
 ```
-Model "Readme example" [solved]:
+Model "Readme example" [optimized]:
     Optimum: 490
     Variable "1": 130
     Variable "2": 20
@@ -158,14 +186,14 @@ for (&machine, &max_time) in &machines {
     model.reg_constr(sum, Operator::Le, max_time);
 }
 ```
-Finally the model gets solved and the results get printed:
+Finally the model gets optimized and the results get printed:
 ```rust
-model.solve();
+model.optimize();
 print!("{}", model);
 ```
 The output will look like this:
 ```
-Model "ABC_Company" [solved]:
+Model "ABC_Company" [optimized]:
     Optimum: 22738.095238095237
     Variable "Product C": 47.61904761904763
     Variable "Product A": 178.57142857142856

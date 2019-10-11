@@ -1,6 +1,6 @@
-//! A library for optimizing linear programming (LP) models.
-//!
-//! Provides simple utilities to create and optimize dynamic LP models.
+//! A Linear programming library
+//! Providing an interface to optimize linear programs.
+//! This library does not (yet) support mixed integer programming.
 // TODO custom error types instead of Result<_,&'static str>
 // TODO impl Display for Var
 // Problem: variable fields not copyable / "borrow occures twice"
@@ -13,7 +13,7 @@ mod solver;
 use std::fmt;
 use uuid::Uuid;
 
-/// Representation of a linear programming model.
+/// Representation of a linear program.
 pub struct Model {
     name: String,
     state: State,
@@ -31,7 +31,7 @@ enum State {
     PostRegistration,
 }
 
-/// A linear programs objective.
+/// A linear program's objective.
 pub enum Objective {
     /// Maximize
     Max,
@@ -55,7 +55,7 @@ pub struct Var {
 /// A pair of factor and variable for constructing sums.
 pub struct Summand<'a>(pub f64, pub &'a Var);
 
-/// A constraints comparing operator.
+/// A constraint's comparing operator.
 pub enum Operator {
     /// Greater or equal: `>=`
     Ge,
@@ -66,7 +66,7 @@ pub enum Operator {
 }
 
 impl Model {
-    /// Creates a new `Model`.
+    /// Creates a new [`Model`](struct.model.html). A representation of a linear program.
     pub fn new(name: &str, objective: Objective) -> Self {
         Model {
             name: String::from(name),
@@ -79,16 +79,16 @@ impl Model {
         }
     }
 
-    /// Submits the registered variables or constraints to the `Model` and changes its phase to the next.
-    /// This method can be called implicitly by calling `reg_constr` or `solve`.
+    /// Submits the registered variables or constraints to the [`Model`](struct.model.html) and changes it's phase to the next.
+    /// This method can be called implicitly by calling [`reg_constr`](#method.reg_constr) or [`optimize`](#method.optimize).
     ///
-    /// The `Model`s lifetime follows three strictly seperated phases:
+    /// The [`Model`](struct.model.html)'s lifetime follows three strictly seperated phases:
     ///
-    ///  - In the first phase, variables are registered.
-    ///  - In the second phase, constraints are registered.
-    ///  - In the third phase, the `Model` can be solved / optimized.
+    ///  - In the first phase, variables can be registered.
+    ///  - In the second phase, constraints can be registered.
+    ///  - In the third phase, the [`Model`](struct.model.html) can be optimized.
     ///
-    /// After the variables or constraints are submitted to the `Model` they can not be changed again (The phases can not be reverted or modified).
+    /// After the variables or constraints are submitted to the [`Model`](struct.model.html), they can not be changed again (The phases can not be reverted or modified).
     pub fn update(&mut self) -> &mut Self {
         match self.state {
             State::VariableRegistration => self.state = State::ConstraintRegistration,
@@ -98,7 +98,7 @@ impl Model {
         self
     }
 
-    /// Registers a variable for the `Model`.
+    /// Registers a variable for the [`Model`](struct.model.html).
     /// # Panics
     /// This method panics if the variables were already submitted. See [`update`](#method.update).
     // TODO simple overloading not possible?
@@ -106,7 +106,7 @@ impl Model {
         self.reg_var_overload(objective_value, Option::None)
     }
 
-    /// Registers a variable, with a given name, for the `Model`.
+    /// Registers a variable, with a given name, for the [`Model`](struct.model.html).
     /// # Panics
     /// This method panics if the variables were already submitted. See [`update`](#method.update).
     pub fn reg_var_with_name(&mut self, objective_value: f64, name: &str) -> Var {
@@ -129,15 +129,17 @@ impl Model {
         }
     }
 
-    /// Returns the optimal value for a given variable.
+    /// Returns the optimal value for a given, registered variable.
     /// # Errors
-    /// This method will return an Error if the optimal value has not been calculated yet.
+    /// This method will return an Error if the [`Model`](struct.model.html) has not been optimized. See [`optimize`](#method.optimize).
+    /// # Panics
+    /// This method panics if the variable is not registered for the calling [`Model`](struct.model.html).
     pub fn x(&self, req: &Var) -> Result<f64, &'static str> {
         for variable in &self.variables {
             if variable.uuid == req.reference {
                 match variable.x {
                     Some(x) => return Result::Ok(x),
-                    None => return Result::Err("Model not solved yet"),
+                    None => return Result::Err("Model not optimized"),
                 }
             }
         }
@@ -149,7 +151,7 @@ impl Model {
     /// # Panics
     /// This method panics if the constraints were already submitted. See [`update`](#method.update).
     ///
-    /// Or if one of the variables in sum does not belong to the calling `Model`.
+    /// Or if one of the variables in sum is not registered for the calling [`Model`](struct.model.html).
     pub fn reg_constr(&mut self, mut sum: Vec<Summand>, op: Operator, b: f64) -> &mut Self {
         match self.state {
             State::VariableRegistration => {
@@ -248,24 +250,24 @@ impl Model {
         self
     }
 
-    /// Solves / optimizes the `Model`.
+    /// Optimizes the [`Model`](struct.model.html).
     /// # Panics
-    /// This method panics if the model is infeasable or might be degenerate
-    pub fn solve(&mut self) -> &mut Self {
+    /// This method panics if the model is infeasable or might be degenerate.
+    pub fn optimize(&mut self) -> &mut Self {
         if let Option::None = self.optimum {
             match self.state {
                 State::VariableRegistration => {
                     self.update();
                     self.update();
-                    return self.solve();
+                    return self.optimize();
                 }
                 State::ConstraintRegistration => {
                     self.update();
-                    return self.solve();
+                    return self.optimize();
                 }
                 State::PostRegistration => {
                     self.init_tableau();
-                    let (solution, value) = solver::solve(&mut self.tableau, Option::None);
+                    let (solution, value) = solver::optimize(&mut self.tableau, Option::None);
                     match self.objective {
                         Objective::Max => self.optimum = Option::Some(value),
                         Objective::Min => self.optimum = Option::Some(-value),
@@ -281,11 +283,11 @@ impl Model {
         self
     }
 
-    /// Returns the optimal value if it was calculated already.
+    /// Returns the optimal value.
     /// # Errors
-    /// This method will return an Error if the optimum has not been calculated yet.
+    /// This method will return an Error if the calling [`Model`](struct.model.html) has not been optimized. See [`optimize`](#method.optimize).
     pub fn optimum(&self) -> Result<f64, &'static str> {
-        self.optimum.ok_or_else(|| "Model not solved yet")
+        self.optimum.ok_or_else(|| "Model not optimized")
     }
 }
 
@@ -298,7 +300,7 @@ impl fmt::Display for Model {
                 let mut i = 0;
                 writeln!(
                     f,
-                    "\nModel \"{}\" [solved]:\n\tOptimum: {}{}",
+                    "\nModel \"{}\" [optimized]:\n\tOptimum: {}{}",
                     self.name,
                     optimum,
                     self.variables.iter().fold(String::new(), |acc, variable| {
@@ -310,7 +312,7 @@ impl fmt::Display for Model {
                     })
                 )
             }
-            Option::None => writeln!(f, "\nModel \"{}\" [not solved]", self.name),
+            Option::None => writeln!(f, "\nModel \"{}\" [not optimized]", self.name),
         }
     }
 }

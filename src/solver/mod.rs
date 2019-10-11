@@ -80,14 +80,14 @@ fn next(tableau: &mut Vec<Vec<f64>>, (pivot_row, pivot_column): (usize, usize)) 
 }
 
 #[allow(dead_code)]
-pub fn solve(
+pub fn optimize(
     tableau: &mut Vec<Vec<f64>>,
     variable_count: Option<usize>,
 ) -> (Option<HashMap<usize, f64>>, f64) {
     let position_b = tableau[0].len() - 1;
     for row in tableau[1..].iter() {
         if row[position_b] < 0f64 {
-            return solve_two_phases(tableau, position_b);
+            return optimize_two_phases(tableau, position_b);
         }
     }
     let mut pivot_element: (usize, usize);
@@ -107,7 +107,7 @@ pub fn solve(
 }
 
 #[allow(dead_code)]
-fn solve_two_phases(
+fn optimize_two_phases(
     tableau: &mut Vec<Vec<f64>>,
     position_b: usize,
 ) -> (Option<HashMap<usize, f64>>, f64) {
@@ -121,7 +121,7 @@ fn solve_two_phases(
     // Phase one
     let phase_two_objective_function =
         prepare_phase_one(tableau, number_artificial_variables, position_b);
-    let (_, value) = solve(tableau, Option::Some(position_b));
+    let (_, value) = optimize(tableau, Option::Some(position_b));
     // Check if model is feasable
     if value != 0f64 {
         panic!("Model is infeasable");
@@ -132,7 +132,7 @@ fn solve_two_phases(
         phase_two_objective_function,
         number_artificial_variables,
     );
-    let (solution, value) = solve(tableau, Option::None);
+    let (solution, value) = optimize(tableau, Option::None);
     (solution, value)
 }
 

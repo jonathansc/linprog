@@ -19,7 +19,7 @@ fn solve_1() {
         Operator::Le,
         4.0,
     );
-    model.solve();
+    model.optimize();
     // Test
     assert_eq!(3.6, model.x(&vars[0]).unwrap());
     assert_eq!(0.4, model.x(&vars[1]).unwrap());
@@ -44,7 +44,7 @@ fn solve_2() {
         Operator::Le,
         3.0,
     );
-    model.solve();
+    model.optimize();
     // Test
     assert_eq!(20.0, model.x(&vars[0]).unwrap());
     assert_eq!(17.0, model.x(&vars[1]).unwrap());
@@ -74,7 +74,7 @@ fn solve_3() {
         Operator::Le,
         2.0,
     );
-    model.solve();
+    model.optimize();
     // Test
     assert!(model.x(&vars[0]).is_err());
     assert!(model.x(&vars[1]).is_err());
@@ -104,7 +104,7 @@ fn solve_4() {
         Operator::Le,
         2.0,
     );
-    model.solve();
+    model.optimize();
     // Test
     assert_eq!(0.6666666666666666, model.x(&vars[0]).unwrap());
     assert_eq!(0.3333333333333333, model.x(&vars[1]).unwrap());
@@ -129,7 +129,7 @@ fn solve_5() {
         Operator::Le,
         6.0,
     );
-    model.solve();
+    model.optimize();
     // Test
     assert_eq!(0.0, model.x(&vars[0]).unwrap());
     assert_eq!(2.0, model.x(&vars[1]).unwrap());
@@ -159,7 +159,7 @@ fn readme_example() {
         Operator::Le,
         180.0,
     );
-    model.solve();
+    model.optimize();
     //print!("{}", model);
     // Test
     assert_eq!(130.0, model.x(&vars[0]).unwrap());
@@ -215,7 +215,7 @@ fn readme_example_story() {
         model.reg_constr(sum, Operator::Le, max_time);
     }
 
-    model.solve();
+    model.optimize();
 
     //print!("{}", model);
 

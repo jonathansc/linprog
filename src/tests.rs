@@ -23,7 +23,7 @@ fn update_indirect() {
     model.reg_constr(vec![Summand(8.4, &vars[0])], Operator::Le, 6.0);
     assert!(State::ConstraintRegistration == model.state);
     model.reg_constr(vec![Summand(8.4, &vars[0])], Operator::Le, 5.0);
-    model.solve();
+    model.optimize();
     assert!(State::PostRegistration == model.state);
 }
 
