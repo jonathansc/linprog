@@ -1,21 +1,16 @@
-// TODO Revised simplex method?
-
 #[cfg(test)]
 mod tests;
 
 use std::collections::HashMap;
 
-#[allow(dead_code)]
 fn is_optimal(tableau: &Vec<Vec<f64>>) -> bool {
     return !tableau[0][..tableau[0].len() - 1].iter().any(|&x| x > 0f64);
 }
 
-#[allow(dead_code)]
 fn is_unbounded(tableau: &Vec<Vec<f64>>, pivot_column: usize) -> bool {
     return !tableau[1..].iter().any(|x| x[pivot_column] > 0f64);
 }
 
-#[allow(dead_code)]
 fn optimum(tableau: &Vec<Vec<f64>>, variable_count: usize) -> (HashMap<usize, f64>, f64) {
     let mut solution: HashMap<usize, f64> = HashMap::with_capacity(variable_count);
     for column_index in 0..variable_count {
@@ -36,8 +31,6 @@ fn optimum(tableau: &Vec<Vec<f64>>, variable_count: usize) -> (HashMap<usize, f6
     (solution, -*tableau[0].last().unwrap())
 }
 
-#[allow(dead_code)]
-// TODO Other pricing methods?
 fn pivot(tableau: &Vec<Vec<f64>>) -> Option<(usize, usize)> {
     let mut max_column: (usize, f64) = (0, -1.0 / 0.0);
     for (column_index, &value) in tableau[0][..tableau[0].len() - 1].iter().enumerate() {
@@ -62,7 +55,6 @@ fn pivot(tableau: &Vec<Vec<f64>>) -> Option<(usize, usize)> {
     Option::Some((min_row.0 + 1, max_column.0))
 }
 
-#[allow(dead_code)]
 fn next(tableau: &mut Vec<Vec<f64>>, (pivot_row, pivot_column): (usize, usize)) {
     let pivot = tableau[pivot_row][pivot_column];
     tableau[pivot_row] = tableau[pivot_row].iter().map(|&x| x / pivot).collect();
@@ -79,7 +71,6 @@ fn next(tableau: &mut Vec<Vec<f64>>, (pivot_row, pivot_column): (usize, usize)) 
     }
 }
 
-#[allow(dead_code)]
 pub fn optimize(
     tableau: &mut Vec<Vec<f64>>,
     variable_count: Option<usize>,
@@ -106,7 +97,6 @@ pub fn optimize(
     (Option::Some(map), value)
 }
 
-#[allow(dead_code)]
 fn optimize_two_phases(
     tableau: &mut Vec<Vec<f64>>,
     position_b: usize,
@@ -136,7 +126,6 @@ fn optimize_two_phases(
     (solution, value)
 }
 
-#[allow(dead_code)]
 fn prepare_phase_one(
     tableau: &mut Vec<Vec<f64>>,
     number_artificial_variables: usize,
@@ -179,7 +168,6 @@ fn prepare_phase_one(
     phase_two_objective_function
 }
 
-#[allow(dead_code)]
 fn prepare_phase_two(
     tableau: &mut Vec<Vec<f64>>,
     mut phase_two_objective_function: Vec<f64>,
@@ -217,7 +205,6 @@ fn prepare_phase_two(
     }
 }
 
-#[allow(dead_code)]
 fn is_base_variable(tableau: &Vec<Vec<f64>>, variable: usize) -> bool {
     let mut found_one = false;
     let mut ret = false;

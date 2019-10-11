@@ -15,6 +15,7 @@ Linprog will be available on [crates.io](https://crates.io) soon.
   - [Example](#example)
   - [Example with story](#example-with-story)
   - [How you can help](#how-you-can-help)
+  - [Authors](#authors)
   - [License](#license)
 
 ## Usage
@@ -217,6 +218,9 @@ Make of this what you want :ok_woman:
 
 ## How you can help
 * Please have a look at the [help wanted issues](https://github.com/jonathansc/linprog/labels/help%20wanted) -- these include both development and data supply issues
+
+## Authors
+* Jonathan S. - *Developer* - jonathansc(at)airmail.cc
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details

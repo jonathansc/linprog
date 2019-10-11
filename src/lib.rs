@@ -1,9 +1,8 @@
-//! A Linear programming library
+//! A linear programming library
+//!
 //! Providing an interface to optimize linear programs.
+//!
 //! This library does not (yet) support mixed integer programming.
-// TODO custom error types instead of Result<_,&'static str>
-// TODO impl Display for Var
-// Problem: variable fields not copyable / "borrow occures twice"
 
 #[cfg(test)]
 mod tests;
@@ -101,7 +100,6 @@ impl Model {
     /// Registers a variable for the [`Model`](struct.model.html).
     /// # Panics
     /// This method panics if the variables were already submitted. See [`update`](#method.update).
-    // TODO simple overloading not possible?
     pub fn reg_var(&mut self, objective_value: f64) -> Var {
         self.reg_var_overload(objective_value, Option::None)
     }
@@ -143,7 +141,6 @@ impl Model {
                 }
             }
         }
-        // TODO panic or Result::Err?
         panic!("Variable not registered for this model");
     }
 
@@ -232,7 +229,6 @@ impl Model {
         }
         self.tableau.push(tmp);
         for (column, constraint) in self.constraints.iter().enumerate() {
-            // TODO extend constraint and push or use tmp?
             let mut tmp: Vec<f64> =
                 Vec::with_capacity(self.variables.len() + number_of_constraints + 1);
             constraint.iter().for_each(|&value| tmp.push(value));
@@ -292,7 +288,6 @@ impl Model {
 }
 
 // I know this part does not look good
-// TODO simpe solution
 impl fmt::Display for Model {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.optimum {

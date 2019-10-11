@@ -1,9 +1,9 @@
 [package]
 name = "linprog"
 version = "0.3.0"
-authors = ["jonathansc <55756347+jonathansc@users.noreply.github.com>"]
+authors = ["jonathansc <jonathansc@airmail.cc>"]
 edition = "2018"
 license = "MIT"
-description = "A library for optimizing linear programming models."
+description = "A linear programming library."
 [dependencies]
 uuid = { version = "0.4", features = ["v4"] }
