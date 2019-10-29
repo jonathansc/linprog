@@ -1,7 +1,7 @@
 # linprog
 
-A Rust library for optimizing [linear programming](https://en.wikipedia.org/wiki/Linear_programming) (LP) models, implemented using [Dantzig's simplex algorithm](https://en.wikipedia.org/wiki/Simplex_algorithm).
-Linprog provides utilities to create and optimize dynamic LP models.
+A high level Rust library for optimizing [linear programs](https://en.wikipedia.org/wiki/Linear_programming) (LP), implemented using [Dantzig's simplex algorithm](https://en.wikipedia.org/wiki/Simplex_algorithm).
+Linprog provides high level utilities to create and optimize dynamic LP models.
 
 This library does not (yet :turtle:) support mixed integer programming.
 
@@ -81,11 +81,6 @@ model.reg_constr(
     vec![Summand(1.0, &vars[0]), Summand(2.0, &vars[1])],
     Operator::Le,
     170.0,
-);
-model.reg_constr(
-    vec![Summand(1.0, &vars[0]), Summand(1.0, &vars[1])],
-    Operator::Le,
-    150.0,
 );
 model.reg_constr(
     vec![Summand(0.0, &vars[0]), Summand(3.0, &vars[1])],
